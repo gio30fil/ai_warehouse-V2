@@ -34,3 +34,7 @@ def create_app():
     start_scheduler()
 
     return app
+
+
+# Module-level app instance for gunicorn (gunicorn app:app)
+app = create_app()

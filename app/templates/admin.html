@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel — IFSAS{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-lg" style="animation: fadeInDown 0.6s ease-out;">
+        <h1 class="gradient-text" style="font-size: 2rem;">⚙️ Admin Panel</h1>
+        <div class="flex gap-sm">
+            <button onclick="clearProducts()" class="btn btn-danger btn-sm" style="margin-right: 1rem;">⚠️ Διαγραφή Αποθήκης</button>
+            <a href="/admin/softone-raw" target="_blank" class="btn btn-primary btn-sm">SoftOne Live Data</a>
+            <a href="/admin/stock" target="_blank" class="btn btn-success btn-sm">Stock List</a>
+            <a href="/" class="btn btn-secondary btn-sm">← Επιστροφή</a>
+        </div>
+    </header>
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Χρήστες</div>
+            <div class="stat-value">{{ users|length }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Top Αναζήτηση</div>
+            <div class="stat-value" style="font-size: 1.1rem; color: var(--accent-blue);">
+                {% if top_searches %}{{ top_searches[0]['query'][:20] }}{% else %}—{% endif %}
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Αναζητήσεις Σήμερα</div>
+            <div class="stat-value" style="color: var(--accent-green);">
+                {% if daily_stats %}{{ daily_stats[0][1] }}{% else %}0{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Create User -->
+    <div class="card mb-lg" style="animation: fadeInUp 0.6s ease-out;">
+        <h3 class="mb-md" style="font-size: 1.1rem;">➕ Δημιουργία Χρήστη</h3>
+        <form method="POST" action="/admin/add" class="admin-form">
+            <input name="username" class="input" placeholder="Username" required>
+            <input name="password" class="input" placeholder="Password" type="password" required>
+            <button class="btn btn-success">Δημιουργία</button>
+        </form>
+    </div>
+
+    <!-- Users Table -->
+    <div class="data-section mb-lg" style="animation: fadeInUp 0.7s ease-out;">
+        <div class="section-header">
+            <div class="section-title">👥 Χρήστες</div>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Role</th>
+                        <th>Ενέργειες</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user['id'] }}</td>
+                        <td class="fw-600">{{ user['username'] }}</td>
+                        <td><span class="badge badge-cat">{{ user['role'] }}</span></td>
+                        <td>
+                            <div class="flex gap-sm">
+                                <a href="/admin/edit/{{ user['id'] }}" class="btn btn-secondary btn-sm">✏️ Edit</a>
+                                <a href="/admin/delete/{{ user['id'] }}" class="btn btn-danger btn-sm" 
+                                   onclick="return confirm('Σίγουρα;')">🗑️ Delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;" class="mb-lg">
+        <!-- Top Searches -->
+        <div class="card">
+            <h3 class="mb-md" style="font-size: 1rem;">🔥 Top Αναζητήσεις</h3>
+            <canvas id="searchChart" height="200"></canvas>
+        </div>
+        <!-- Searches per User -->
+        <div class="card">
+            <h3 class="mb-md" style="font-size: 1rem;">👥 Αναζητήσεις ανά Χρήστη</h3>
+            <canvas id="userChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Daily Chart -->
+    <div class="card mb-lg">
+        <h3 class="mb-md" style="font-size: 1rem;">📈 Αναζητήσεις ανά Ημέρα</h3>
+        <canvas id="dayChart" height="150"></canvas>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="data-section" style="animation: fadeInUp 0.8s ease-out;">
+        <div class="section-header">
+            <div class="section-title">📋 Πρόσφατη Δραστηριότητα</div>
+        </div>
+        <div class="table-container" style="max-height: 400px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Χρήστης</th>
+                        <th>Αναζήτηση</th>
+                        <th>Ημ/νία</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>
+                            <a href="/admin/user/{{ log['user'] }}" style="color: var(--accent-blue); text-decoration: none; font-weight: 600;">
+                                {{ log['user'] }}
+                            </a>
+                        </td>
+                        <td>{{ log['query'] }}</td>
+                        <td class="text-dim text-sm">{{ log['created_at'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    async function clearProducts() {
+        if (!confirm('ΠΡΟΣΟΧΗ: Θέλετε να ΔΙΑΓΡΑΨΕΤΕ ΟΛΑ τα προϊόντα από τη βάση;')) return;
+        if (!confirm('Η ενέργεια δεν αναιρείται. Είστε απόλυτα βέβαιοι;')) return;
+
+        try {
+            const res = await fetch('/api/clear_products', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Σφάλμα: ' + data.error);
+            }
+        } catch (err) {
+            alert('Σφάλμα κατά τη διαγραφή.');
+        }
+    }
+
+    const chartColors = {
+        bg: 'rgba(99, 102, 241, 0.3)',
+        border: 'rgba(99, 102, 241, 1)',
+        bg2: 'rgba(59, 130, 246, 0.3)',
+        border2: 'rgba(59, 130, 246, 1)',
+        bg3: 'rgba(16, 185, 129, 0.3)',
+        border3: 'rgba(16, 185, 129, 1)',
+    };
+
+    const chartDefaults = {
+        color: '#94a3b8',
+        borderColor: 'rgba(255,255,255,0.05)',
+    };
+
+    Chart.defaults.color = chartDefaults.color;
+    Chart.defaults.borderColor = chartDefaults.borderColor;
+
+    new Chart(document.getElementById('searchChart'), {
+        type: 'bar',
+        data: {
+            labels: [{% for row in top_searches %}"{{ row['query'][:25] }}",{% endfor %}],
+            datasets: [{
+                label: 'Αναζητήσεις',
+                data: [{% for row in top_searches %}{{ row['total'] }},{% endfor %}],
+                backgroundColor: chartColors.bg,
+                borderColor: chartColors.border,
+                borderWidth: 1,
+                borderRadius: 6,
+            }]
+        },
+        options: { plugins: { legend: { display: false } } }
+    });
+
+    new Chart(document.getElementById('userChart'), {
+        type: 'bar',
+        data: {
+            labels: [{% for row in user_stats %}"{{ row['user'] }}",{% endfor %}],
+            datasets: [{
+                label: 'Αναζητήσεις',
+                data: [{% for row in user_stats %}{{ row['total'] }},{% endfor %}],
+                backgroundColor: chartColors.bg2,
+                borderColor: chartColors.border2,
+                borderWidth: 1,
+                borderRadius: 6,
+            }]
+        },
+        options: { plugins: { legend: { display: false } } }
+    });
+
+    new Chart(document.getElementById('dayChart'), {
+        type: 'line',
+        data: {
+            labels: [{% for row in daily_stats %}"{{ row[0] }}",{% endfor %}],
+            datasets: [{
+                label: 'Αναζητήσεις / Ημέρα',
+                data: [{% for row in daily_stats %}{{ row[1] }},{% endfor %}],
+                backgroundColor: chartColors.bg3,
+                borderColor: chartColors.border3,
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: chartColors.border3,
+            }]
+        },
+        options: { plugins: { legend: { display: false } } }
+    });
+</script>
+{% endblock %}

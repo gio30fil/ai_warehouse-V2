@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User — IFSAS{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width: 500px; margin-top: 5rem;">
+    <div class="card" style="animation: slideUp 0.5s ease-out;">
+        <h2 class="gradient-text mb-lg" style="font-size: 1.5rem;">✏️ Επεξεργασία Χρήστη</h2>
+
+        <form method="POST">
+            <div class="mb-md">
+                <label class="text-dim text-sm fw-600" style="display: block; margin-bottom: 0.5rem;">Username</label>
+                <input name="username" class="input w-full" value="{{ user['username'] }}" required>
+            </div>
+            <div class="mb-md">
+                <label class="text-dim text-sm fw-600" style="display: block; margin-bottom: 0.5rem;">New Password</label>
+                <input name="password" type="password" class="input w-full" placeholder="Νέο password" required>
+            </div>
+            <div class="flex gap-sm mt-lg">
+                <button type="submit" class="btn btn-success">💾 Αποθήκευση</button>
+                <a href="/admin" class="btn btn-secondary">← Επιστροφή</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

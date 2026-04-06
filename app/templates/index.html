@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}IFSAS AI Stock Assistant | Έξυπνη Διαχείριση Αποθέματος{% endblock %}
+
+{% block body %}
+<div class="container">
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <img src="/static/logo.png" class="logo" alt="IFSAS Logo">
+        <span class="title">🔎 AI Stock Assistant</span>
+        <div class="spacer"></div>
+        <div class="user-info">
+            <span>👤 {{ session.user }}</span>
+
+            {% if session.role == "admin" %}
+            <a href="/admin" class="btn btn-secondary btn-sm">Admin</a>
+            <button id="syncBtn" class="btn btn-info btn-sm" onclick="syncSoftOne()">
+                🔄 Sync Products
+            </button>
+            <button id="embedBtn" class="btn btn-sm" style="background: rgba(99, 102, 241, 0.2); border: 1px solid var(--primary); color: white;" onclick="generateEmbeddings()">
+                🤖 Δημιουργία AI Index
+            </button>
+            {% endif %}
+
+            <button class="btn btn-primary btn-sm" onclick="showStockModal()">
+                📋 Απόθεμα
+            </button>
+
+            <button class="btn btn-secondary btn-sm" onclick="window.open('/admin/pending-orders', '_blank')">
+                📁 Παραγγελίες
+            </button>
+
+            <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+        </div>
+    </nav>
+
+    <!-- Search -->
+    <form id="searchForm" class="search-form" onsubmit="return false;">
+        <input type="text" id="searchQuery" class="input" placeholder="Αναζήτηση προϊόντων (π.χ. κάμερα dome 4mp)..."
+            autofocus>
+        <select id="searchCategory" class="select">
+            <option value="all">Όλες οι κατηγορίες</option>
+            {% for c in categories %}
+            <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" id="searchBtn" class="btn btn-primary">🔎 Αναζήτηση</button>
+    </form>
+
+    <!-- Main Layout -->
+    <div class="main-grid">
+        <!-- Results Column -->
+        <div>
+            <div id="advisorContainer"></div>
+            <div id="resultsContainer">
+                <div class="empty-state">
+                    <p class="text-dim">Κάντε μια αναζήτηση για να ξεκινήσετε...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Offer Column -->
+        <div>
+            <div class="card offer-panel">
+                <div class="offer-header">
+                    <h3 style="font-size: 1.1rem;">🧾 Προσφορά</h3>
+                    <button id="exportPdfBtn" class="btn btn-secondary btn-sm">📄 Export PDF</button>
+                </div>
+                <div id="offerEmptyState" class="offer-empty">Η λίστα είναι άδεια</div>
+                <ul id="offerList" class="offer-list"></ul>
+                <button class="btn btn-danger btn-sm w-full" onclick="clearOffer()"
+                    style="justify-content: center; margin-top: 0.5rem;">
+                    🧹 Καθαρισμός
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Modal -->
+<div id="stockModal" class="modal-overlay">
+    <div class="modal-content">
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+
+        <div class="flex items-center gap-md mb-lg">
+            <h2 class="gradient-text" style="font-size: 1.5rem;">📦 Κατάλογος Προϊόντων & Απόθεμα</h2>
+            <button id="fetchStockBtn" class="btn btn-success btn-sm" onclick="fetchLiveStock()">
+                🔄 Τράβηγμα Αποθέματος (SoftOne)
+            </button>
+        </div>
+
+        <div class="mb-md">
+            <input type="text" id="modalSearch" class="input w-full" onkeyup="filterModalTable()"
+                placeholder="🔍 Αναζήτηση στον πίνακα (Κωδικός ή Περιγραφή)...">
+        </div>
+
+        <div class="data-section">
+            <div class="table-container">
+                <table id="stockTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">Κωδικός</th>
+                            <th>Περιγραφή</th>
+                            <th style="width: 120px; text-align: center;">Απόθεμα</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stockTableBody">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

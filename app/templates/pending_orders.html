@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Εκκρεμείς Παραγγελίες — IFSAS{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width: 1200px;">
+    <header class="flex items-center justify-between mb-lg" style="animation: fadeInDown 0.6s ease-out;">
+        <div>
+            <h1 class="gradient-text" style="font-size: 2rem;">Εκκρεμείς Παραγγελίες Πωλήσεων</h1>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="window.close()">Κλείσιμο</button>
+    </header>
+
+    <div class="card" style="animation: fadeInUp 0.7s ease-out;">
+        {% if orders %}
+        <p class="text-dim mb-lg">Βρέθηκαν {{ orders|length }} εκκρεμείς παραγγελίες.</p>
+
+        {% for order in orders %}
+        <div class="order-card">
+            <div class="order-info">
+                <h3>Παραγγελία: {{ order.fincode or ('#' + (order.trndate or 'Unknown')) }}</h3>
+                <p>Πελάτης: {{ order.customer_name or 'N/A' }}</p>
+                <p>Ημερομηνία: {{ order.trndate or 'N/A' }}</p>
+                <p>Συνολική Αξία: {{ order.sum_amount or '0.00' }} €</p>
+            </div>
+            <div>
+                <span class="badge badge-pending">ΣΕ ΕΚΚΡΕΜΟΤΗΤΑ</span>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% else %}
+        <div class="empty-state">
+            <span class="icon">🔍</span>
+            <h3>Δεν βρέθηκαν εκκρεμείς παραγγελίες</h3>
+            <p class="text-dim mt-md">Δεν υπάρχουν δεδομένα εκκρεμών παραγγελιών από το SoftOne.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

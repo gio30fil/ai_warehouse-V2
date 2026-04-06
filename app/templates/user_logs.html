@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Ιστορικό Αναζητήσεων: {{ username }} — IFSAS{% endblock %}
+
+{% block body %}
+<div class="container" style="max-width: 800px;">
+    <header class="flex items-center justify-between mb-lg" style="animation: fadeInDown 0.6s ease-out;">
+        <div>
+            <h1 class="gradient-text" style="font-size: 1.75rem;">📋 Ιστορικό: {{ username }}</h1>
+        </div>
+        <a href="/admin" class="btn btn-secondary btn-sm">← Admin</a>
+    </header>
+
+    <div class="data-section" style="animation: fadeInUp 0.7s ease-out;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Αναζήτηση</th>
+                        <th>Ημ/νία</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td class="fw-500">{{ log['query'] }}</td>
+                        <td class="text-dim text-sm">{{ log['created_at'] }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if not logs %}
+                    <tr>
+                        <td colspan="2" class="text-center text-dim" style="padding: 3rem;">Δεν βρέθηκαν αναζητήσεις</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}IFSAS AI Login{% endblock %}
+
+{% block body %}
+<div class="login-container">
+    <div class="login-card">
+        <img src="/static/logo.png" class="logo" alt="IFSAS Logo">
+        <h2>AI Stock Assistant</h2>
+
+        {% if error %}
+        <div class="login-error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" id="loginForm">
+            <input type="text" name="username" class="input" placeholder="Username" required autocomplete="username">
+            <input type="password" name="password" class="input" placeholder="Password" required autocomplete="current-password">
+            <button type="submit" class="btn btn-primary">Σύνδεση</button>
+        </form>
+
+        <div class="footer">IFSAS Security Systems — GT®</div>
+    </div>
+</div>
+{% endblock %}

@@ -107,15 +107,87 @@ def normalize_query(text: str) -> str:
     return text
 
 
+def _lookup_by_kodikos(query: str, category: str = "all") -> list:
+    """
+    Direct database lookup by SoftOne product code (kodikos).
+    Returns matching products if the query looks like a product code.
+    Uses exact match first, then prefix match with LIKE.
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Try exact match first (case-insensitive)
+    if category != "all":
+        cursor.execute("""
+            SELECT kodikos, factory_code, description, category, subcategory, stock, available_stock
+            FROM products
+            WHERE LOWER(kodikos) = LOWER(?) AND category = ?
+        """, (query, category))
+    else:
+        cursor.execute("""
+            SELECT kodikos, factory_code, description, category, subcategory, stock, available_stock
+            FROM products
+            WHERE LOWER(kodikos) = LOWER(?)
+        """, (query,))
+
+    rows = cursor.fetchall()
+
+    # If no exact match, try prefix match (user might type partial code)
+    if not rows:
+        like_pattern = f"{query}%"
+        if category != "all":
+            cursor.execute("""
+                SELECT kodikos, factory_code, description, category, subcategory, stock, available_stock
+                FROM products
+                WHERE LOWER(kodikos) LIKE LOWER(?) AND category = ?
+                LIMIT 10
+            """, (like_pattern, category))
+        else:
+            cursor.execute("""
+                SELECT kodikos, factory_code, description, category, subcategory, stock, available_stock
+                FROM products
+                WHERE LOWER(kodikos) LIKE LOWER(?)
+                LIMIT 10
+            """, (like_pattern,))
+        rows = cursor.fetchall()
+
+    conn.close()
+
+    if not rows:
+        return []
+
+    results = []
+    for row in rows:
+        results.append({
+            "score": 1.0,
+            "kodikos": row["kodikos"],
+            "factory_code": row["factory_code"],
+            "description": row["description"],
+            "category": row["category"],
+            "subcategory": row["subcategory"],
+            "stock": row["stock"],
+            "available_stock": row["available_stock"],
+        })
+
+    return results
+
+
 def search_products(query: str, category: str = "all") -> dict:
     """
     Optimized product search:
+    0. Direct kodikos lookup (fast-path for SoftOne codes)
     1. Single AI call: checks relevance + translates query
     2. Cached query embeddings
     3. Vectorized cosine similarity (batch numpy operation)
     4. AI advisor returned separately (non-blocking)
     """
     query_lower = normalize_query(query)
+
+    # ── Step 0: Direct kodikos lookup (SoftOne product code) ──
+    direct_results = _lookup_by_kodikos(query_lower.strip(), category)
+    if direct_results:
+        logger.info(f"Direct kodikos match for '{query}' → {len(direct_results)} result(s)")
+        return {"products": direct_results, "advisor": None}
 
     # ── Step 1: AI combined check + translation (single API call) ──
     ai_result = understand_and_check_query(query_lower)

@@ -49,7 +49,7 @@
                             {% set sa = p.live_available|float %}
                             <div>
                                 <div class="badge {{ 'badge-stock-high' if sp > 0 else 'badge-stock-none' }}" style="font-size: 0.9rem; font-weight: 700;">
-                                    Φυσικό: {{ p.live_total }} | Διαθέσιμο: {{ p.live_available }} | Δεσμευμένα: {{ (p.live_total|float - p.live_available|float)|int }}
+                                    Φυσικό: {{ p.live_total }} | Διαθέσιμο: {{ p.live_available }}
                                 </div>
                                 {% if p.details|length > 1 %}
                                 <div class="text-xs text-dim" style="margin-top: 5px;">

@@ -116,12 +116,13 @@ function renderProducts(products, container) {
     products.forEach((p, index) => {
         const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
         const availableStockVal = p.available_stock !== null && p.available_stock !== undefined ? parseFloat(p.available_stock) : stockVal;
+        const reservedStockVal = stockVal - availableStockVal;
         
         let stockBadge = '';
         if (stockVal > 10) {
-            stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
+            stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)} | Res: ${reservedStockVal.toFixed(0)}</span>`;
         } else if (stockVal > 0) {
-            stockBadge = `<span class="badge badge-stock-low">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
+            stockBadge = `<span class="badge badge-stock-low">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)} | Res: ${reservedStockVal.toFixed(0)}</span>`;
         } else {
             stockBadge = `<span class="badge badge-stock-none">Out of Stock</span>`;
         }
@@ -237,10 +238,11 @@ function renderStockTable(products) {
         const row = body.insertRow();
         const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
         const availableStockVal = p.available_stock !== null && p.available_stock !== undefined ? parseFloat(p.available_stock) : stockVal;
+        const reservedStockVal = stockVal - availableStockVal;
 
         let stockBadge = '';
-        if (stockVal > 10) stockBadge = `<span class="badge badge-stock-high">P:${stockVal.toFixed(0)} / A:${availableStockVal.toFixed(0)}</span>`;
-        else if (stockVal > 0) stockBadge = `<span class="badge badge-stock-low">P:${stockVal.toFixed(0)} / A:${availableStockVal.toFixed(0)}</span>`;
+        if (stockVal > 10) stockBadge = `<span class="badge badge-stock-high">P:${stockVal.toFixed(0)} / A:${availableStockVal.toFixed(0)} / R:${reservedStockVal.toFixed(0)}</span>`;
+        else if (stockVal > 0) stockBadge = `<span class="badge badge-stock-low">P:${stockVal.toFixed(0)} / A:${availableStockVal.toFixed(0)} / R:${reservedStockVal.toFixed(0)}</span>`;
         else stockBadge = `<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">0</span>`;
 
         row.innerHTML = `

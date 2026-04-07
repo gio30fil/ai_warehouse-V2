@@ -1,0 +1,7 @@
+.env
+warehouse.db
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+*.log

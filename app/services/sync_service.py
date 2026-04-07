@@ -116,14 +116,14 @@ def sync_softone_stock(whouse_code: str | None = None) -> int:
 
     updated_count = 0
     for item in stock_data:
-        # SoftOne API sometimes returns keys with trailing spaces, e.g. "physical_stock "
-        # We normalize the item dict by stripping spaces from keys.
-        clean_item = {k.strip(): v for k, v in item.items()}
+        # Normalize keys (SoftOne API sometimes returns keys with trailing spaces)
+        item = {k.strip(): v for k, v in item.items() if isinstance(k, str)}
         
-        item_code = clean_item.get("item_code")
-        physical_stock = clean_item.get("physical_stock", clean_item.get("stock", 0))
+        item_code = item.get("item_code")
+        physical_stock = item.get("physical_stock", item.get("stock", 0))
         
-        # User requested to remove 'res' (reserved), so Available = Physical
+        # User requested to remove 'res' (reserved) from stock calculations.
+        # We set available_stock to be the same as physical_stock.
         available_stock = physical_stock
 
         if item_code is not None:

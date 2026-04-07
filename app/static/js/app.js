@@ -119,9 +119,9 @@ function renderProducts(products, container) {
         
         let stockBadge = '';
         if (stockVal > 10) {
-            stockBadge = `<span class="badge badge-stock-high">Stock: ${stockVal.toFixed(0)}</span>`;
+            stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
         } else if (stockVal > 0) {
-            stockBadge = `<span class="badge badge-stock-low">Stock: ${stockVal.toFixed(0)}</span>`;
+            stockBadge = `<span class="badge badge-stock-low">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
         } else {
             stockBadge = `<span class="badge badge-stock-none">Out of Stock</span>`;
         }
@@ -239,9 +239,9 @@ function renderStockTable(products) {
         const availableStockVal = p.available_stock !== null && p.available_stock !== undefined ? parseFloat(p.available_stock) : stockVal;
 
         let stockBadge = '';
-        if (stockVal > 10) stockBadge = `<span class="badge badge-stock-high">${stockVal.toFixed(0)}</span>`;
-        else if (stockVal > 0) stockBadge = `<span class="badge badge-stock-low">${stockVal.toFixed(0)}</span>`;
-        else stockBadge = `<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">0</span>`;
+        if (stockVal > 10) stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
+        else if (stockVal > 0) stockBadge = `<span class="badge badge-stock-low">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
+        else stockBadge = `<span class="badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">Phys: 0 | Avail: 0</span>`;
 
         row.innerHTML = `
             <td><span class="badge badge-code">${p.code}</span></td>

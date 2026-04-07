@@ -121,10 +121,7 @@ def sync_softone_stock(whouse_code: str | None = None) -> int:
         
         item_code = item.get("item_code")
         physical_stock = item.get("physical_stock", item.get("stock", 0))
-        
-        # User requested to remove 'res' (reserved) from stock calculations.
-        # We set available_stock to be the same as physical_stock.
-        available_stock = physical_stock
+        available_stock = item.get("available_stock", physical_stock)
 
         if item_code is not None:
             cursor.execute("SELECT id FROM products WHERE kodikos = ?", (item_code,))

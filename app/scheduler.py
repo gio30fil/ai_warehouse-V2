@@ -21,7 +21,7 @@ def _run_sync_task():
 
 
 def start_scheduler():
-    """Start APScheduler for daily sync at 8:00 AM."""
+    """Start APScheduler for periodic sync every 5 minutes."""
     global _scheduler
 
     import os
@@ -34,11 +34,10 @@ def start_scheduler():
     _scheduler = BackgroundScheduler()
     _scheduler.add_job(
         _run_sync_task,
-        "cron",
-        hour=8,
-        minute=0,
-        id="daily_sync",
+        "interval",
+        minutes=5,
+        id="periodic_sync",
         replace_existing=True,
     )
     _scheduler.start()
-    logger.info("Background scheduler started (daily sync at 08:00).")
+    logger.info("Background scheduler started (sync every 5 minutes).")

@@ -68,11 +68,15 @@ def softone_raw():
 
     products = fetch_products()
     stock = fetch_stock()
+    # Normalize keys in stock data
+    stock = [{str(k).strip(): v for k, v in item.items()} for item in stock]
 
-    stock_lookup = {
-        str(item.get("item_code")).strip().lower(): item.get("physical_stock", 0)
-        for item in stock if item.get("item_code")
-    }
+    stock_lookup = {}
+    for item in stock:
+        item = {str(k).strip(): v for k, v in item.items()}
+        code = str(item.get("item_code")).strip().lower()
+        if code:
+            stock_lookup[code] = item.get("physical_stock", item.get("stock", 0))
 
     combined_data = []
     for p in products:
@@ -94,20 +98,38 @@ def stock_list():
 
     stock_lookup = {}
     for s in live_stock:
+        s = {str(k).strip(): v for k, v in s.items()}
         code = str(s.get("item_code", "")).strip().lower()
         if not code:
             continue
 
         details = []
-        for wh in s.get("stock_per_warehouse", []):
-            wh_name = wh.get("whouse_name", "Unknown")
-            q = wh.get("physical_stock ", wh.get("physical_stock", 0))
-            if q > 0:
-                details.append({"wh": wh_name, "q": q})
+        wh_phys_sum = 0
+        wh_avail_sum = 0
+        has_wh_data = False
+        wh_list = s.get("stock_per_warehouse", [])
+        if wh_list and isinstance(wh_list, list):
+            has_wh_data = True
+            for wh in wh_list:
+                wh = {str(k).strip(): v for k, v in wh.items()}
+                wh_name = wh.get("whouse_name", "Unknown")
+                p_q = float(wh.get("physical_stock", wh.get("physical_stock ", 0)))
+                a_q = float(wh.get("available_stock", wh.get("available_stock ", 0)))
+                wh_phys_sum += p_q
+                wh_avail_sum += a_q
+                if p_q > 0:
+                    details.append({"wh": wh_name, "q": p_q})
+
+        total = s.get("physical_stock", s.get("stock", 0))
+        available = s.get("available_stock", s.get("physical_stock", s.get("stock", 0)))
+        
+        if has_wh_data:
+            total = wh_phys_sum
+            available = wh_avail_sum
 
         stock_lookup[code] = {
-            "total": s.get("physical_stock", 0),
-            "available": s.get("available_stock", s.get("physical_stock", 0)),
+            "total": total,
+            "available": available,
             "details": details,
         }
 

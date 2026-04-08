@@ -115,7 +115,9 @@ function renderProducts(products, container) {
 
     products.forEach((p, index) => {
         const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
-        const availableStockVal = p.available_stock !== null && p.available_stock !== undefined ? parseFloat(p.available_stock) : stockVal;
+        // If available_stock is null/undefined, it means we don't have info, 
+        // but we should check if the field itself is missing.
+        const availableStockVal = (p.available_stock !== null && p.available_stock !== undefined) ? parseFloat(p.available_stock) : stockVal;
         
         let stockBadge = '';
         if (stockVal > 10) {
@@ -236,7 +238,7 @@ function renderStockTable(products) {
     products.forEach(p => {
         const row = body.insertRow();
         const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
-        const availableStockVal = p.available_stock !== null && p.available_stock !== undefined ? parseFloat(p.available_stock) : stockVal;
+        const availableStockVal = (p.available_stock !== null && p.available_stock !== undefined) ? parseFloat(p.available_stock) : stockVal;
 
         let stockBadge = '';
         if (stockVal > 10) stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;

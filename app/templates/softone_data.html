@@ -36,7 +36,8 @@
                         <th>Description</th>
                         <th>Category</th>
                         <th>Subcategory</th>
-                        <th>Stock</th>
+                        <th>Phys Stock</th>
+                        <th>Avail Stock</th>
                         <th>Factory Code</th>
                     </tr>
                 </thead>
@@ -49,6 +50,7 @@
                         <td>{{ p.get('group', {}).get('name', 'N/A') if p.get('group') is mapping else 'N/A' }}</td>
                         <td>{{ p.get('subgroup', {}).get('name', 'N/A') if p.get('subgroup') is mapping else 'N/A' }}</td>
                         <td><span class="badge badge-stock-high">{{ p.get('live_stock', '0') }}</span></td>
+                        <td><span class="badge badge-stock-low">{{ p.get('available_stock', '0') }}</span></td>
                         <td class="text-sm">{{ p.get('name2', 'N/A') }}</td>
                     </tr>
                     {% endfor %}
@@ -69,7 +71,8 @@
                 <thead>
                     <tr>
                         <th>Product Code</th>
-                        <th>Stock</th>
+                        <th>Phys Stock</th>
+                        <th>Avail Stock</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -78,6 +81,7 @@
                     <tr>
                         <td><span class="badge badge-code">{{ s.get('item_code', 'N/A') }}</span></td>
                         <td><span class="badge badge-stock-high">{{ s.get('physical_stock', '0') }}</span></td>
+                        <td><span class="badge badge-stock-low">{{ s.get('available_stock', '0') }}</span></td>
                     </tr>
                     {% endfor %}
                     {% else %}

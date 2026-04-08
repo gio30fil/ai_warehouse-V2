@@ -116,22 +116,44 @@ def sync_softone_stock(whouse_code: str | None = None) -> int:
 
     updated_count = 0
     for item in stock_data:
-        # Normalize keys (SoftOne API sometimes returns keys with trailing spaces)
-        item = {k.strip(): v for k, v in item.items() if isinstance(k, str)}
+        # Normalize keys
+        item = {str(k).strip(): v for k, v in item.items()}
         
-        item_code = item.get("item_code")
-        physical_stock = item.get("physical_stock", item.get("stock", 0))
-        available_stock = item.get("available_stock", physical_stock)
+        # Also normalize the item_code value
+        item_code = str(item.get("item_code", "")).strip()
+        if not item_code:
+            continue
+            
+        # Prioritize stock from warehouses if present
+        wh_phys_sum = 0
+        wh_avail_sum = 0
+        has_wh_data = False
+        wh_list = item.get("stock_per_warehouse", [])
+        if wh_list and isinstance(wh_list, list):
+            has_wh_data = True
+            for wh in wh_list:
+                wh = {str(k).strip(): v for k, v in wh.items()}
+                wh_phys_sum += float(wh.get("physical_stock", wh.get("physical_stock ", 0)))
+                wh_avail_sum += float(wh.get("available_stock", wh.get("available_stock ", 0)))
 
-        if item_code is not None:
-            cursor.execute("SELECT id FROM products WHERE kodikos = ?", (item_code,))
-            existing = cursor.fetchone()
-            if existing:
-                cursor.execute(
-                    "UPDATE products SET stock = ?, available_stock = ? WHERE kodikos = ?",
-                    (physical_stock, available_stock, item_code),
-                )
-                updated_count += 1
+        physical_stock = item.get("physical_stock", item.get("stock", 0))
+        available_stock = item.get("available_stock")
+        if available_stock is None:
+            available_stock = item.get("availability", item.get("balance", physical_stock))
+            
+        # If we have warehouse data, use the sums
+        if has_wh_data:
+            physical_stock = wh_phys_sum
+            available_stock = wh_avail_sum
+
+        cursor.execute("SELECT id FROM products WHERE kodikos = ?", (item_code,))
+        existing = cursor.fetchone()
+        if existing:
+            cursor.execute(
+                "UPDATE products SET stock = ?, available_stock = ? WHERE kodikos = ?",
+                (physical_stock, available_stock, item_code),
+            )
+            updated_count += 1
 
     conn.commit()
     conn.close()

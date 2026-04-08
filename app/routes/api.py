@@ -51,9 +51,12 @@ def sync():
 
     try:
         new_count = sync_softone_products(upddate_from=upddate_from)
+        # Automatically trigger stock sync after product sync for real-time accuracy
+        stock_count = sync_softone_stock()
+        
         return jsonify({
             "success": True,
-            "message": f"Sync completed! Added {new_count} new products.",
+            "message": f"Sync completed! Added {new_count} new products and updated stock for {stock_count} items.",
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

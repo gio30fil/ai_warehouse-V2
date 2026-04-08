@@ -39,19 +39,22 @@ def sync_softone_products(upddate_from: str = "2026-01-01T00:00:00") -> int:
         cursor.execute("SELECT id FROM products WHERE kodikos = ?", (kodikos,))
         existing = cursor.fetchone()
 
+        stock = float(prod.get("stock", 0))
+        available_stock = float(prod.get("availability", prod.get("balance", stock)))
+
         if existing:
             cursor.execute("""
                 UPDATE products
-                SET description = ?, category = ?, subcategory = ?, factory_code = ?
+                SET description = ?, category = ?, subcategory = ?, factory_code = ?, stock = ?, available_stock = ?
                 WHERE kodikos = ?
-            """, (description, category, subcategory, factory_code, kodikos))
-            logger.info(f"[Update] {kodikos} - {description[:40]}")
+            """, (description, category, subcategory, factory_code, stock, available_stock, kodikos))
+            logger.info(f"[Update] {kodikos} - {description[:40]} - Stock: {stock}")
         else:
             cursor.execute("""
                 INSERT INTO products (kodikos, factory_code, description, category, subcategory, stock, available_stock, embedding)
-                VALUES (?, ?, ?, ?, ?, 0, 0, NULL)
-            """, (kodikos, factory_code, description, category, subcategory))
-            logger.info(f"[Insert] {kodikos} - {description[:40]}")
+                VALUES (?, ?, ?, ?, ?, ?, ?, NULL)
+            """, (kodikos, factory_code, description, category, subcategory, stock, available_stock))
+            logger.info(f"[Insert] {kodikos} - {description[:40]} - Stock: {stock}")
             count += 1
 
     conn.commit()

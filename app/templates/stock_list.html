@@ -51,17 +51,19 @@
                                 <div class="badge {{ 'badge-stock-high' if sp > 0 else 'badge-stock-none' }}" style="font-size: 0.9rem; font-weight: 700;">
                                     Φυσικό: {{ p.live_total }} | Διαθέσιμο: {{ p.live_available }}
                                 </div>
-                                {% if p.details|length > 1 %}
                                 <div class="text-xs text-dim" style="margin-top: 5px;">
                                     {% for detail in p.details %}
-                                    <div><strong>{{ detail.wh }}:</strong> {{ detail.q }}</div>
+                                    <div class="flex justify-between gap-md" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 2px 0;">
+                                        <strong>{{ detail.wh }}:</strong>
+                                        <span>
+                                            <span class="text-success" title="Φυσικό">{{ detail.phys }}</span> 
+                                            / 
+                                            <span class="text-info" title="Διαθέσιμο">{{ detail.avail }}</span>
+                                        </span>
+                                    </div>
                                     {% endfor %}
                                 </div>
-                                {% elif p.details|length == 1 %}
-                                <div class="text-xs" style="color: var(--accent-blue); margin-top: 5px;">
-                                    Μοναδικό ({{ p.details[0].wh }})
-                                </div>
-                                {% elif sp <= 0 %}
+                                {% if sp <= 0 and sa <= 0 %}
                                 <div class="text-xs text-muted" style="margin-top: 5px;">Μηδενικό απόθεμα</div>
                                 {% endif %}
                             </div>

@@ -172,6 +172,60 @@ def _lookup_by_kodikos(query: str, category: str = "all") -> list:
     return results
 
 
+def _text_search(query: str, category: str = "all") -> list:
+    """
+    Direct text search (SQL LIKE) on product descriptions.
+    Splits query into words and matches products containing ALL words.
+    Catches products the AI embedding search might miss.
+    """
+    words = [w.strip() for w in query.split() if len(w.strip()) >= 2]
+    if not words:
+        return []
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    # Build WHERE clause: description LIKE '%word1%' AND description LIKE '%word2%' ...
+    conditions = []
+    params = []
+    for word in words:
+        conditions.append("LOWER(description) LIKE LOWER(?)")
+        params.append(f"%{word}%")
+
+    if category != "all":
+        conditions.append("category = ?")
+        params.append(category)
+
+    where_clause = " AND ".join(conditions)
+    sql = f"""
+        SELECT kodikos, factory_code, description, category, subcategory, stock, available_stock
+        FROM products
+        WHERE {where_clause}
+        LIMIT 20
+    """
+
+    cursor.execute(sql, params)
+    rows = cursor.fetchall()
+    conn.close()
+
+    results = []
+    for row in rows:
+        stock = row["stock"]
+        results.append({
+            "score": 0.999,
+            "kodikos": row["kodikos"],
+            "factory_code": row["factory_code"],
+            "description": row["description"],
+            "category": row["category"],
+            "subcategory": row["subcategory"],
+            "stock": stock,
+            "available_stock": row["available_stock"],
+        })
+
+    logger.info(f"Text search for '{query}' → {len(results)} result(s)")
+    return results
+
+
 def search_products(query: str, category: str = "all") -> dict:
     """
     Optimized product search:
@@ -187,14 +241,18 @@ def search_products(query: str, category: str = "all") -> dict:
     direct_results = _lookup_by_kodikos(query_lower.strip(), category)
     if direct_results:
         logger.info(f"Direct kodikos match for '{query}' → {len(direct_results)} result(s)")
-        return {"products": direct_results, "advisor": None}
+        return {"products": direct_results, "advisor": None, "text_matches": []}
+
+    # ── Step 0.5: Text search (SQL LIKE on description) ──
+    text_results = _text_search(query_lower.strip(), category)
+    logger.info(f"Text search found {len(text_results)} result(s) for '{query}'")
 
     # ── Step 1: AI combined check + translation (single API call) ──
     ai_result = understand_and_check_query(query_lower)
 
     if not ai_result["related"]:
-        logger.info(f"Query '{query}' not product-related → returning empty")
-        return {"products": [], "advisor": None, "not_related": True}
+        logger.info(f"Query '{query}' not product-related → returning text matches only")
+        return {"products": [], "advisor": None, "not_related": True, "text_matches": text_results}
 
     translated_query = ai_result["translated"]
     logger.info(f"AI translated: '{query}' → '{translated_query}'")
@@ -299,14 +357,19 @@ def search_products(query: str, category: str = "all") -> dict:
 
     results.sort(reverse=True, key=lambda x: x["score"])
 
-    if not results:
-        return {"products": [], "advisor": None}
+    if not results and not text_results:
+        return {"products": [], "advisor": None, "text_matches": []}
 
     top_results = results[:10]
+
+    # Deduplicate: remove text_results that already appear in AI results
+    ai_kodikos_set = {p["kodikos"] for p in top_results}
+    unique_text_results = [p for p in text_results if p["kodikos"] not in ai_kodikos_set]
 
     return {
         "products": top_results,
         "advisor": None,  # Advisor loaded via separate AJAX call
+        "text_matches": unique_text_results,
     }
 
 

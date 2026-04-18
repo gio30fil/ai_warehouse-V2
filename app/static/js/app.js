@@ -72,18 +72,27 @@ async function performSearch() {
             return;
         }
 
+        const textMatches = data.text_matches || [];
+        const aiProducts = data.products || [];
+
         if (data.not_related) {
-            resultsContainer.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">🤔</span>
-                    <h3>Η αναζήτηση δεν σχετίζεται με προϊόντα</h3>
-                    <p class="text-dim mt-md">Δοκιμάστε μια αναζήτηση σχετική με συστήματα ασφαλείας, π.χ. "κάμερα dome 4mp"</p>
-                </div>
-            `;
+            // AI says query is not product-related, but text search may have found matches
+            if (textMatches.length > 0) {
+                resultsContainer.innerHTML = '';
+                renderTextMatchesSection(textMatches, resultsContainer);
+            } else {
+                resultsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">🤔</span>
+                        <h3>Η αναζήτηση δεν σχετίζεται με προϊόντα</h3>
+                        <p class="text-dim mt-md">Δοκιμάστε μια αναζήτηση σχετική με συστήματα ασφαλείας, π.χ. "κάμερα dome 4mp"</p>
+                    </div>
+                `;
+            }
             return;
         }
 
-        if (!data.products || data.products.length === 0) {
+        if (aiProducts.length === 0 && textMatches.length === 0) {
             resultsContainer.innerHTML = `
                 <div class="empty-state">
                     <span class="icon">🔍</span>
@@ -94,11 +103,31 @@ async function performSearch() {
             return;
         }
 
-        // Render products
-        renderProducts(data.products, resultsContainer);
+        resultsContainer.innerHTML = '';
+
+        // Show text matches section first (if any)
+        if (textMatches.length > 0) {
+            renderTextMatchesSection(textMatches, resultsContainer);
+        }
+
+        // Show AI results
+        if (aiProducts.length > 0) {
+            if (textMatches.length > 0) {
+                // Add AI results header when both sections are present
+                const aiHeader = document.createElement('div');
+                aiHeader.className = 'search-section-header ai-section-header';
+                aiHeader.innerHTML = `
+                    <span class="section-icon">🤖</span>
+                    <span>AI Αναζήτηση — ${aiProducts.length} αποτελέσματα</span>
+                `;
+                resultsContainer.appendChild(aiHeader);
+            }
+            renderProducts(aiProducts, resultsContainer);
+        }
 
         // Load advisor asynchronously (non-blocking)
-        loadAdvisor(query, data.products, advisorContainer);
+        const allProducts = [...textMatches, ...aiProducts];
+        loadAdvisor(query, allProducts.slice(0, 5), advisorContainer);
 
     } catch (err) {
         showToast('Σφάλμα σύνδεσης', 'error');
@@ -111,7 +140,6 @@ async function performSearch() {
 
 
 function renderProducts(products, container) {
-    container.innerHTML = '';
 
     products.forEach((p, index) => {
         const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
@@ -150,6 +178,63 @@ function renderProducts(products, container) {
             <div class="product-actions">
                 <button class="btn btn-success btn-sm"
                         data-factory="${p.factory_code}"
+                        data-description="${p.description}"
+                        onclick="handleAddOffer(this)">
+                    ➕ Προσθήκη
+                </button>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
+}
+
+
+function renderTextMatchesSection(products, container) {
+    // Section header
+    const header = document.createElement('div');
+    header.className = 'search-section-header text-section-header';
+    header.innerHTML = `
+        <span class="section-icon">📝</span>
+        <span>Αποτελέσματα Κειμένου — ${products.length} προϊόντα βρέθηκαν στη βάση</span>
+    `;
+    container.appendChild(header);
+
+    products.forEach((p, index) => {
+        const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
+        const availableStockVal = (p.available_stock !== null && p.available_stock !== undefined) ? parseFloat(p.available_stock) : stockVal;
+
+        let stockBadge = '';
+        if (stockVal > 10) {
+            stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
+        } else if (stockVal > 0) {
+            stockBadge = `<span class="badge badge-stock-low">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
+        } else {
+            stockBadge = `<span class="badge badge-stock-none">Out of Stock</span>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'product-card text-match-card';
+        card.style.animationDelay = `${index * 0.05}s`;
+        card.style.animation = 'slideIn 0.4s ease-out backwards';
+
+        card.innerHTML = `
+            <div class="product-header">
+                <div class="product-info">
+                    <div class="product-meta">S1 Code: ${p.kodikos} | Factory: ${p.factory_code || 'N/A'}</div>
+                    <h4>${p.description}</h4>
+                    <div class="product-category">${p.category || ''} / ${p.subcategory || ''}</div>
+                </div>
+                <div class="text-right">
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.75rem;">📝 Text Match</span>
+                    <a href="javascript:void(0)" class="stock-link" onclick="goToStock('${p.kodikos}')">
+                        ${stockBadge}
+                    </a>
+                </div>
+            </div>
+            <div class="product-actions">
+                <button class="btn btn-success btn-sm"
+                        data-factory="${p.factory_code || ''}"
                         data-description="${p.description}"
                         onclick="handleAddOffer(this)">
                     ➕ Προσθήκη

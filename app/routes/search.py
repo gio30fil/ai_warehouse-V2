@@ -50,6 +50,7 @@ def ajax_search():
             "products": result["products"],
             "advisor": result.get("advisor"),
             "not_related": result.get("not_related", False),
+            "text_matches": result.get("text_matches", []),
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

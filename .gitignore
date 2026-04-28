@@ -5,3 +5,6 @@ __pycache__/
 .idea/
 *.log
 *.db
+offer.pdf
+offer.xlsx
+scratch/

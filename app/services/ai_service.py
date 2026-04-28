@@ -76,6 +76,36 @@ def get_embedding(text: str) -> np.ndarray | None:
     return None
 
 
+def get_embeddings_batch(texts: list[str], batch_size: int = 2000) -> list[np.ndarray | None]:
+    """Generate embeddings for multiple texts in batches (much faster than one-by-one).
+    
+    OpenAI text-embedding-3-small supports up to 2048 inputs per call.
+    Returns a list of embeddings in the same order as the input texts.
+    """
+    all_embeddings = [None] * len(texts)
+    
+    for i in range(0, len(texts), batch_size):
+        batch = texts[i:i + batch_size]
+        batch_end = min(i + batch_size, len(texts))
+        logger.info(f"Embedding batch {i // batch_size + 1}: items {i+1}-{batch_end} of {len(texts)}")
+        
+        for attempt in range(3):
+            try:
+                response = client.embeddings.create(
+                    model="text-embedding-3-small",
+                    input=batch,
+                )
+                for j, item in enumerate(response.data):
+                    all_embeddings[i + j] = np.array(item.embedding, dtype=np.float64)
+                break  # Success, move to next batch
+            except Exception as e:
+                logger.warning(f"Batch embedding attempt {attempt + 1}/3 failed: {e}")
+                if attempt == 2:
+                    logger.error(f"Failed to embed batch starting at index {i}")
+    
+    return all_embeddings
+
+
 def ai_product_advisor(query: str, products: list) -> str | None:
     """AI advisor gives recommendation on top products."""
     if not products:

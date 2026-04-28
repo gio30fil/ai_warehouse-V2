@@ -10,7 +10,8 @@
             <p class="text-dim text-sm mt-md">Συνολικά Καταγεγραμμένα Προϊόντα: {{ products|length }}</p>
         </div>
         <div class="flex gap-sm items-center">
-            <input type="text" id="inventorySearch" class="input" placeholder="Αναζήτηση με κωδικό ή περιγραφή..." style="width: 350px;">
+            <input type="text" id="inventorySearch" class="input" placeholder="Αναζήτηση με κωδικό ή περιγραφή..."
+                style="width: 350px;">
             {% if session.role == 'admin' %}
             <a href="/admin" class="btn btn-secondary btn-sm">← Admin</a>
             {% else %}
@@ -48,36 +49,39 @@
                             {% set sp = p.live_total|float %}
                             {% set sa = p.live_available|float %}
                             <div>
-                                <div class="badge {{ 'badge-stock-high' if sp > 0 else 'badge-stock-none' }}" style="font-size: 0.9rem; font-weight: 700;">
+                                <div class="badge {{ 'badge-stock-high' if sp > 0 else 'badge-stock-none' }}"
+                                    style="font-size: 0.9rem; font-weight: 700;">
                                     Φυσικό: {{ p.live_total }} | Διαθέσιμο: {{ p.live_available }}
                                 </div>
                                 <div class="text-xs text-dim" style="margin-top: 5px;">
                                     {% for detail in p.details %}
-                                    <div class="flex justify-between gap-md" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 2px 0;">
+                                    <div class="flex justify-between gap-md"
+                                        style="border-bottom: 1px solid rgba(255,255,255,0.05); padding: 2px 0;">
                                         <strong>{{ detail.wh }}:</strong>
                                         <span>
-                                            <span class="text-success" title="Φυσικό">{{ detail.phys }}</span> 
-                                            / 
+                                            <span class="text-success" title="Φυσικό">{{ detail.phys }}</span>
+                                            /
                                             <span class="text-info" title="Διαθέσιμο">{{ detail.avail }}</span>
                                         </span>
                                     </div>
                                     {% endfor %}
                                 </div>
-                                {% if sp <= 0 and sa <= 0 %}
-                                <div class="text-xs text-muted" style="margin-top: 5px;">Μηδενικό απόθεμα</div>
-                                {% endif %}
+                                {% if sp <= 0 and sa <=0 %} <div class="text-xs text-muted" style="margin-top: 5px;">
+                                    Μηδενικό απόθεμα
                             </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% else %}
-                    <tr>
-                        <td colspan="5" class="text-center text-dim" style="padding: 3rem;">Δεν βρέθηκαν δεδομένα αποθέματος</td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                            {% endif %}
         </div>
+        </td>
+        </tr>
+        {% endfor %}
+        {% else %}
+        <tr>
+            <td colspan="5" class="text-center text-dim" style="padding: 3rem;">Δεν βρέθηκαν δεδομένα αποθέματος</td>
+        </tr>
+        {% endif %}
+        </tbody>
+        </table>
     </div>
+</div>
 </div>
 {% endblock %}

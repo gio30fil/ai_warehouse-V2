@@ -32,8 +32,15 @@ def create_offer_pdf(products: list) -> str:
     c.setFont(font_name, 12)
 
     for product in products:
-        text = str(product)
-        text = text.replace("❌", "").replace("\n", "").replace("\r", "").strip()
+        if isinstance(product, dict):
+            qty = product.get('qty', 1)
+            code = product.get('code', '')
+            desc = product.get('desc', '')
+            text = f"{qty} x {code} — {desc}"
+        else:
+            text = str(product)
+            text = text.replace("❌", "").replace("\n", "").replace("\r", "").strip()
+            
         c.drawString(100, y, text)
         y -= 25
 

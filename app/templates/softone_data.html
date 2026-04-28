@@ -6,7 +6,8 @@
 <div class="container">
     <header class="flex items-center justify-between mb-lg" style="animation: fadeInDown 0.6s ease-out;">
         <h1 class="gradient-text" style="font-size: 2rem;">SoftOne API Integration</h1>
-        <input type="text" id="globalSearch" class="input" placeholder="Search across all data..." style="width: 300px;">
+        <input type="text" id="globalSearch" class="input" placeholder="Search across all data..."
+            style="width: 300px;">
     </header>
 
     <div class="stats-grid">
@@ -48,14 +49,17 @@
                         <td><span class="badge badge-code">{{ p.get('code', 'N/A') }}</span></td>
                         <td>{{ p.get('name', 'N/A') }}</td>
                         <td>{{ p.get('group', {}).get('name', 'N/A') if p.get('group') is mapping else 'N/A' }}</td>
-                        <td>{{ p.get('subgroup', {}).get('name', 'N/A') if p.get('subgroup') is mapping else 'N/A' }}</td>
+                        <td>{{ p.get('subgroup', {}).get('name', 'N/A') if p.get('subgroup') is mapping else 'N/A' }}
+                        </td>
                         <td><span class="badge badge-stock-high">{{ p.get('live_stock', '0') }}</span></td>
                         <td><span class="badge badge-stock-low">{{ p.get('available_stock', '0') }}</span></td>
                         <td class="text-sm">{{ p.get('name2', 'N/A') }}</td>
                     </tr>
                     {% endfor %}
                     {% else %}
-                    <tr><td colspan="6" class="text-center text-dim" style="padding: 3rem;">No product data found</td></tr>
+                    <tr>
+                        <td colspan="6" class="text-center text-dim" style="padding: 3rem;">No product data found</td>
+                    </tr>
                     {% endif %}
                 </tbody>
             </table>
@@ -85,7 +89,9 @@
                     </tr>
                     {% endfor %}
                     {% else %}
-                    <tr><td colspan="2" class="text-center text-dim" style="padding: 3rem;">No stock data found</td></tr>
+                    <tr>
+                        <td colspan="2" class="text-center text-dim" style="padding: 3rem;">No stock data found</td>
+                    </tr>
                     {% endif %}
                 </tbody>
             </table>

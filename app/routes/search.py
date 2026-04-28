@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from app.database import get_connection
 from app.services.search_service import search_products, get_advisor_for_products
 from app.utils.pdf import create_offer_pdf
+from app.utils.excel import create_offer_excel
 
 search = Blueprint("search", __name__)
 
@@ -50,7 +51,6 @@ def ajax_search():
             "products": result["products"],
             "advisor": result.get("advisor"),
             "not_related": result.get("not_related", False),
-            "text_matches": result.get("text_matches", []),
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -77,4 +77,14 @@ def export_pdf():
 
     products = request.json
     filename = create_offer_pdf(products)
+    return send_file(filename, as_attachment=True)
+
+
+@search.route("/export_excel", methods=["POST"])
+def export_excel():
+    if "user" not in session:
+        return redirect(url_for("auth.login"))
+
+    products = request.json
+    filename = create_offer_excel(products)
     return send_file(filename, as_attachment=True)

@@ -436,47 +436,6 @@ tr:last-child td {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
-/* ── Search Section Headers ── */
-.search-section-header {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.85rem 1.25rem;
-    border-radius: var(--radius-lg);
-    margin-bottom: 1rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-    animation: slideDown 0.3s ease-out;
-}
-
-.search-section-header .section-icon {
-    font-size: 1.2rem;
-}
-
-.text-section-header {
-    background: rgba(16, 185, 129, 0.08);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    border-left: 4px solid var(--accent-green);
-    color: #6ee7b7;
-}
-
-.ai-section-header {
-    background: rgba(99, 102, 241, 0.08);
-    border: 1px solid rgba(99, 102, 241, 0.2);
-    border-left: 4px solid var(--primary);
-    color: #a5b4fc;
-    margin-top: 1.5rem;
-}
-
-/* ── Text Match Card Variant ── */
-.text-match-card::before {
-    background: linear-gradient(135deg, #34d399, #10b981, #059669) !important;
-}
-
-.text-match-card:hover {
-    border-color: rgba(16, 185, 129, 0.3);
-}
-
 /* ── Advisor Box ── */
 .advisor-box {
     background: rgba(99, 102, 241, 0.08);
@@ -551,6 +510,49 @@ tr:last-child td {
 .offer-item .remove-btn:hover {
     opacity: 1;
     transform: scale(1.2);
+}
+
+/* Quantity Styles */
+.offer-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+}
+
+.offer-item-info {
+    font-weight: 500;
+}
+
+.offer-item-qty {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.qty-input {
+    width: 50px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--card-border);
+    color: var(--text-main);
+    padding: 0.15rem 0.35rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    outline: none;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.qty-input:focus {
+    border-color: var(--primary);
+    background: rgba(15, 23, 42, 0.9);
+}
+
+.unit {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
 .offer-empty {

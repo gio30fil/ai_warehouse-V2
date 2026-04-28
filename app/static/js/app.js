@@ -72,27 +72,18 @@ async function performSearch() {
             return;
         }
 
-        const textMatches = data.text_matches || [];
-        const aiProducts = data.products || [];
-
         if (data.not_related) {
-            // AI says query is not product-related, but text search may have found matches
-            if (textMatches.length > 0) {
-                resultsContainer.innerHTML = '';
-                renderTextMatchesSection(textMatches, resultsContainer);
-            } else {
-                resultsContainer.innerHTML = `
-                    <div class="empty-state">
-                        <span class="icon">🤔</span>
-                        <h3>Η αναζήτηση δεν σχετίζεται με προϊόντα</h3>
-                        <p class="text-dim mt-md">Δοκιμάστε μια αναζήτηση σχετική με συστήματα ασφαλείας, π.χ. "κάμερα dome 4mp"</p>
-                    </div>
-                `;
-            }
+            resultsContainer.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">🤔</span>
+                    <h3>Η αναζήτηση δεν σχετίζεται με προϊόντα</h3>
+                    <p class="text-dim mt-md">Δοκιμάστε μια αναζήτηση σχετική με συστήματα ασφαλείας, π.χ. "κάμερα dome 4mp"</p>
+                </div>
+            `;
             return;
         }
 
-        if (aiProducts.length === 0 && textMatches.length === 0) {
+        if (!data.products || data.products.length === 0) {
             resultsContainer.innerHTML = `
                 <div class="empty-state">
                     <span class="icon">🔍</span>
@@ -103,31 +94,11 @@ async function performSearch() {
             return;
         }
 
-        resultsContainer.innerHTML = '';
-
-        // Show text matches section first (if any)
-        if (textMatches.length > 0) {
-            renderTextMatchesSection(textMatches, resultsContainer);
-        }
-
-        // Show AI results
-        if (aiProducts.length > 0) {
-            if (textMatches.length > 0) {
-                // Add AI results header when both sections are present
-                const aiHeader = document.createElement('div');
-                aiHeader.className = 'search-section-header ai-section-header';
-                aiHeader.innerHTML = `
-                    <span class="section-icon">🤖</span>
-                    <span>AI Αναζήτηση — ${aiProducts.length} αποτελέσματα</span>
-                `;
-                resultsContainer.appendChild(aiHeader);
-            }
-            renderProducts(aiProducts, resultsContainer);
-        }
+        // Render products
+        renderProducts(data.products, resultsContainer);
 
         // Load advisor asynchronously (non-blocking)
-        const allProducts = [...textMatches, ...aiProducts];
-        loadAdvisor(query, allProducts.slice(0, 5), advisorContainer);
+        loadAdvisor(query, data.products, advisorContainer);
 
     } catch (err) {
         showToast('Σφάλμα σύνδεσης', 'error');
@@ -140,18 +111,19 @@ async function performSearch() {
 
 
 function renderProducts(products, container) {
+    container.innerHTML = '';
 
     products.forEach((p, index) => {
         const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
         // If available_stock is null/undefined, it means we don't have info, 
         // but we should check if the field itself is missing.
         const availableStockVal = (p.available_stock !== null && p.available_stock !== undefined) ? parseFloat(p.available_stock) : stockVal;
-        
+
         let stockBadge = '';
         if (stockVal > 10) {
-            stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
+            stockBadge = `<span class="badge badge-stock-high">Available: ${availableStockVal.toFixed(0)}</span>`;
         } else if (stockVal > 0) {
-            stockBadge = `<span class="badge badge-stock-low">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
+            stockBadge = `<span class="badge badge-stock-low">Available: ${availableStockVal.toFixed(0)}</span>`;
         } else {
             stockBadge = `<span class="badge badge-stock-none">Out of Stock</span>`;
         }
@@ -177,64 +149,8 @@ function renderProducts(products, container) {
             </div>
             <div class="product-actions">
                 <button class="btn btn-success btn-sm"
+                        data-kodikos="${p.kodikos}"
                         data-factory="${p.factory_code}"
-                        data-description="${p.description}"
-                        onclick="handleAddOffer(this)">
-                    ➕ Προσθήκη
-                </button>
-            </div>
-        `;
-
-        container.appendChild(card);
-    });
-}
-
-
-function renderTextMatchesSection(products, container) {
-    // Section header
-    const header = document.createElement('div');
-    header.className = 'search-section-header text-section-header';
-    header.innerHTML = `
-        <span class="section-icon">📝</span>
-        <span>Αποτελέσματα Κειμένου — ${products.length} προϊόντα βρέθηκαν στη βάση</span>
-    `;
-    container.appendChild(header);
-
-    products.forEach((p, index) => {
-        const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
-        const availableStockVal = (p.available_stock !== null && p.available_stock !== undefined) ? parseFloat(p.available_stock) : stockVal;
-
-        let stockBadge = '';
-        if (stockVal > 10) {
-            stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
-        } else if (stockVal > 0) {
-            stockBadge = `<span class="badge badge-stock-low">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
-        } else {
-            stockBadge = `<span class="badge badge-stock-none">Out of Stock</span>`;
-        }
-
-        const card = document.createElement('div');
-        card.className = 'product-card text-match-card';
-        card.style.animationDelay = `${index * 0.05}s`;
-        card.style.animation = 'slideIn 0.4s ease-out backwards';
-
-        card.innerHTML = `
-            <div class="product-header">
-                <div class="product-info">
-                    <div class="product-meta">S1 Code: ${p.kodikos} | Factory: ${p.factory_code || 'N/A'}</div>
-                    <h4>${p.description}</h4>
-                    <div class="product-category">${p.category || ''} / ${p.subcategory || ''}</div>
-                </div>
-                <div class="text-right">
-                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-size: 0.75rem;">📝 Text Match</span>
-                    <a href="javascript:void(0)" class="stock-link" onclick="goToStock('${p.kodikos}')">
-                        ${stockBadge}
-                    </a>
-                </div>
-            </div>
-            <div class="product-actions">
-                <button class="btn btn-success btn-sm"
-                        data-factory="${p.factory_code || ''}"
                         data-description="${p.description}"
                         onclick="handleAddOffer(this)">
                     ➕ Προσθήκη
@@ -325,6 +241,7 @@ function renderStockTable(products) {
         const stockVal = p.stock !== null ? parseFloat(p.stock) : 0;
         const availableStockVal = (p.available_stock !== null && p.available_stock !== undefined) ? parseFloat(p.available_stock) : stockVal;
 
+        const totalVal = stockVal - availableStockVal;
         let stockBadge = '';
         if (stockVal > 10) stockBadge = `<span class="badge badge-stock-high">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
         else if (stockVal > 0) stockBadge = `<span class="badge badge-stock-low">Phys: ${stockVal.toFixed(0)} | Avail: ${availableStockVal.toFixed(0)}</span>`;
@@ -392,7 +309,7 @@ async function syncSoftOne() {
 
     const upddate_from = prompt("Εισάγετε ημερομηνία από την οποία θα αντληθούν τα προϊόντα (ΕΕΕΕ-ΜΜ-ΗΗ):", defaultDateStr);
     if (upddate_from === null) return; // User cancelled
-    
+
     // Basic format validation
     if (!/^\d{4}-\d{2}-\d{2}$/.test(upddate_from)) {
         showToast("Μη έγκυρη μορφή ημερομηνίας. Πρέπει να είναι ΕΕΕΕ-ΜΜ-ΗΗ.", "error");
@@ -406,7 +323,7 @@ async function syncSoftOne() {
     btn.innerHTML = '<span class="spinner"></span> Syncing...';
 
     try {
-        const res = await fetch('/api/sync', { 
+        const res = await fetch('/api/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ upddate_from: payloadDate })
@@ -459,21 +376,29 @@ async function generateEmbeddings() {
 // ── Offer Functions ──────────────────────────────────────
 
 function handleAddOffer(btn) {
+    const kodikos = btn.getAttribute('data-kodikos');
     const factory = btn.getAttribute('data-factory');
     const desc = btn.getAttribute('data-description');
-    addToOffer(factory, desc);
+    addToOffer(kodikos, factory, desc);
 }
 
-function addToOffer(code, desc) {
+function addToOffer(code, factory, desc) {
     const list = document.getElementById('offerList');
     const emptyState = document.getElementById('offerEmptyState');
     if (!list) return;
 
     const li = document.createElement('li');
     li.className = 'offer-item';
+    li.setAttribute('data-factory', factory || '');
     li.innerHTML = `
-        <div>
-            <strong style="color: var(--primary);">${code}</strong> — ${desc}
+        <div class="offer-item-content">
+            <div class="offer-item-info">
+                <strong class="offer-code" style="color: var(--primary);">${code}</strong> — <span class="offer-desc">${desc}</span>
+            </div>
+            <div class="offer-item-qty">
+                <input type="number" value="1" min="1" class="qty-input">
+                <span class="unit">τεμ.</span>
+            </div>
         </div>
         <button class="remove-btn" onclick="removeItem(this)">✕</button>
     `;
@@ -512,9 +437,11 @@ async function exportPdf() {
 
     const products = [];
     items.forEach(i => {
-        const clone = i.cloneNode(true);
-        clone.querySelector('.remove-btn').remove();
-        products.push(clone.textContent.trim());
+        const code = i.querySelector('.offer-code').textContent;
+        const factory = i.getAttribute('data-factory') || '';
+        const desc = i.querySelector('.offer-desc').textContent;
+        const qty = i.querySelector('.qty-input').value;
+        products.push({ code, factory, desc, qty });
     });
 
     try {
@@ -532,6 +459,46 @@ async function exportPdf() {
         showToast('PDF εξαγωγή ολοκληρώθηκε!', 'success');
     } catch (err) {
         showToast('Σφάλμα εξαγωγής PDF', 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+
+async function exportExcel() {
+    const items = document.querySelectorAll('#offerList .offer-item');
+    if (items.length === 0) {
+        showToast('Η λίστα είναι άδεια!', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('exportExcelBtn');
+    if (btn) btn.disabled = true;
+
+    const products = [];
+    items.forEach(i => {
+        const code = i.querySelector('.offer-code').textContent;
+        const factory = i.getAttribute('data-factory') || '';
+        const desc = i.querySelector('.offer-desc').textContent;
+        const qty = i.querySelector('.qty-input').value;
+        products.push({ code, factory, desc, qty });
+    });
+
+    try {
+        const res = await fetch('/export_excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(products),
+        });
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'AI WAREHOUSE ASSISTANT.xlsx';
+        a.click();
+        showToast('Excel εξαγωγή ολοκληρώθηκε!', 'success');
+    } catch (err) {
+        showToast('Σφάλμα εξαγωγής Excel', 'error');
     } finally {
         if (btn) btn.disabled = false;
     }
@@ -565,6 +532,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const exportBtn = document.getElementById('exportPdfBtn');
     if (exportBtn) {
         exportBtn.addEventListener('click', exportPdf);
+    }
+
+    // Excel export button
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    if (exportExcelBtn) {
+        exportExcelBtn.addEventListener('click', exportExcel);
     }
 
     // Modal close on outside click

@@ -7,7 +7,7 @@ from softone.client import fetch_products, fetch_stock
 logger = logging.getLogger(__name__)
 
 
-def sync_softone_products(upddate_from: str = "2026-01-01T00:00:00") -> int:
+def sync_softone_products(upddate_from: str = "2020-01-01T00:00:00") -> int:
     """Fetches products from SoftOne and syncs with local database."""
     try:
         new_products = fetch_products(upddate_from=upddate_from)
@@ -23,11 +23,15 @@ def sync_softone_products(upddate_from: str = "2026-01-01T00:00:00") -> int:
 
     count = 0
     for prod in new_products:
+        # Map SoftOne fields to database fields
         kodikos = str(prod.get("code", ""))
-        factory_code = str(prod.get("name2", ""))
-        if not factory_code or factory_code == "None":
+        
+        # Priority for Factory Code: Technical Code > Barcode > Name2 > S1 Code
+        factory_code = str(prod.get("technical_code") or prod.get("barcode") or prod.get("name2") or "")
+        
+        if not factory_code or factory_code.strip() == "" or factory_code == "None":
             factory_code = kodikos
-
+            
         description = str(prod.get("name", ""))
 
         group = prod.get("group")
@@ -68,7 +72,7 @@ def sync_softone_products(upddate_from: str = "2026-01-01T00:00:00") -> int:
 
 
 def generate_missing_embeddings() -> int:
-    """Finds products without embeddings and generates them using OpenAI API."""
+    """Finds products without embeddings and generates them using OpenAI batch API."""
     conn = get_connection()
     cursor = conn.cursor()
 
@@ -77,24 +81,42 @@ def generate_missing_embeddings() -> int:
     )
     to_embed = cursor.fetchall()
 
+    if not to_embed:
+        conn.close()
+        return 0
+
+    logger.info(f"Generating embeddings for {len(to_embed)} products (batch mode)...")
+    
+    # Prepare texts for batch embedding
+    texts = []
+    for item in to_embed:
+        text = f"{item['factory_code']} {item['description']} {item['category']} {item['subcategory']}"
+        texts.append(text)
+    
+    # Use batch embedding for speed
+    from app.services.ai_service import get_embeddings_batch
+    embeddings = get_embeddings_batch(texts)
+    
     generated_count = 0
-    if to_embed:
-        logger.info(f"Generating embeddings for {len(to_embed)} products...")
-        for i, item in enumerate(to_embed, 1):
-            logger.info(f"Embedding [{i}/{len(to_embed)}]: {item['kodikos']} - {item['description'][:40]}")
-            text = f"{item['factory_code']} {item['description']} {item['category']} {item['subcategory']}"
-            embedding = get_embedding(text)
-            if embedding is not None:
-                cursor.execute(
-                    "UPDATE products SET embedding = ? WHERE id = ?",
-                    (embedding.tobytes(), item["id"]),
-                )
-                generated_count += 1
-            else:
-                logger.warning(f"Failed to generate embedding for product {item['kodikos']}")
+    for i, (item, embedding) in enumerate(zip(to_embed, embeddings)):
+        if embedding is not None:
+            cursor.execute(
+                "UPDATE products SET embedding = ? WHERE id = ?",
+                (embedding.tobytes(), item["id"]),
+            )
+            generated_count += 1
+        else:
+            logger.warning(f"Failed to generate embedding for product {item['kodikos']}")
+        
+        # Commit every 2000 to avoid huge transactions
+        if (i + 1) % 2000 == 0:
+            conn.commit()
+            logger.info(f"Progress: {i + 1}/{len(to_embed)} embeddings saved")
 
     conn.commit()
     conn.close()
+
+    logger.info(f"Embedding generation complete: {generated_count}/{len(to_embed)} successful")
 
     if generated_count > 0:
         from app.services.search_service import invalidate_cache
